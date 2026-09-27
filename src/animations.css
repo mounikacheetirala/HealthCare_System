@@ -1,0 +1,351 @@
+/* ===========================================================
+   Meridian Health — Motion
+   Loaded after index.css so it can layer on top of the base styles.
+   To turn all animations off, remove the `import './animations.css'`
+   line in main.jsx — nothing else depends on this file.
+
+   Rules of thumb used throughout:
+   • Motion either answers an action (open, close, confirm, error)
+     or draws the eye to one important thing (the hero heartbeat).
+   • Wrapper elements never keep a `transform` after their animation
+     ends — that would trap `position: fixed` modals inside them.
+   • Everything collapses to "no motion" for people who ask for it
+     (see the prefers-reduced-motion block at the bottom).
+=========================================================== */
+
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 150ms;
+  --dur-base: 260ms;
+  --dur-slow: 500ms;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes fade-in      { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out     { from { opacity: 1; } to { opacity: 0; } }
+@keyframes rise-in      { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes page-in      { from { opacity: 0; transform: translateY(6px); }  to { opacity: 1; transform: none; } }
+@keyframes row-in       { from { opacity: 0; transform: translateY(6px); }  to { opacity: 1; transform: none; } }
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes drop-in      { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes pop-in       { from { opacity: 0; transform: scale(0.85); }       to { opacity: 1; transform: none; } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes bar-grow     { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes draw         { to { stroke-dashoffset: 0; } }
+@keyframes modal-in     { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes modal-out    { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.98); } }
+@keyframes toast-in     { from { opacity: 0; transform: translateX(28px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes toast-out    { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(28px); } }
+@keyframes toast-timer  { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes icon-swap    { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes pulse-ring   { 0% { transform: scale(0.85); opacity: 0.55; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes ecg-travel   { 0% { stroke-dashoffset: 140; } 78%, 100% { stroke-dashoffset: -1000; } }
+
+/* ---------- Page transitions ---------- */
+.page-enter { animation: page-in 320ms var(--ease-out); }
+
+/* ---------- Scroll reveal (see components/Reveal.jsx) ---------- */
+.reveal { opacity: 0; }
+.reveal.is-visible {
+  opacity: 1;
+  animation: rise-in 650ms var(--ease-out) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+.reveal-stagger > * { opacity: 0; }
+.reveal-stagger.is-visible > * {
+  opacity: 1;
+  animation: rise-in 600ms var(--ease-out) backwards;
+}
+
+/* ---------- Stagger on mount (lists, grids, page sections) ---------- */
+.stagger > * { animation: rise-in 480ms var(--ease-out) backwards; }
+/* a stagger group nested in another one manages its own children */
+.stagger > .stagger { animation: none; }
+
+/* ---------- Navbar ---------- */
+.navbar { transition: box-shadow var(--dur-base) ease, border-color var(--dur-base) ease; }
+.navbar.is-scrolled { box-shadow: 0 6px 20px rgba(18, 36, 31, 0.08); border-bottom-color: transparent; }
+
+.brand-mark { transition: transform 400ms var(--ease-spring); }
+.brand:hover .brand-mark { transform: rotate(-8deg) scale(1.08); }
+
+.nav-link { transition: color var(--dur-fast) ease, border-color var(--dur-base) var(--ease-out); }
+.nav-link:not(.active):hover { border-bottom-color: var(--border-color-strong); }
+
+.icon-swap { animation: icon-swap 260ms var(--ease-out); }
+
+@media (max-width: 860px) {
+  .nav-links.open { animation: drop-in 240ms var(--ease-out); }
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(11, 110, 110, 0.28); }
+.btn-accent:hover:not(:disabled)  { box-shadow: 0 6px 16px rgba(255, 111, 77, 0.32); }
+.btn-outline:hover:not(:disabled) { box-shadow: var(--shadow-sm); }
+.btn-ghost:hover:not(:disabled)   { transform: none; }
+.btn:active:not(:disabled) { transform: translateY(0) scale(0.97); box-shadow: none; }
+
+/* Spinner inside a button while it's submitting (add class "is-loading") */
+.btn.is-loading::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ---------- Cards, chips, rows ---------- */
+.doctor-card { transition: box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) ease, transform var(--dur-base) var(--ease-out); }
+.doctor-card:hover { transform: translateY(-3px); }
+.doctor-avatar { transition: transform 400ms var(--ease-spring); }
+.doctor-card:hover .doctor-avatar { transform: scale(1.06) rotate(-3deg); }
+
+.appt-card { transition: border-color var(--dur-fast) ease, box-shadow var(--dur-base) var(--ease-out); }
+.appt-card:hover { border-color: var(--border-color-strong); box-shadow: var(--shadow-sm); }
+
+.chip { transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out); }
+.chip:hover { transform: translateY(-1px); }
+.chip:active { transform: scale(0.97); }
+
+.stat-value, .hero-stat-num { font-variant-numeric: tabular-nums; }
+
+.data-table td { transition: background-color var(--dur-fast) ease; }
+
+/* Progress bars that grow in (add class "bar-fill") */
+.bar-fill { transform-origin: left center; animation: bar-grow 900ms var(--ease-out) backwards; }
+
+/* ---------- Sidebar ---------- */
+.sidebar-link {
+  position: relative;
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.sidebar-link svg { transition: transform var(--dur-base) var(--ease-out); }
+.sidebar-link:hover svg { transform: translateX(2px); }
+.sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-primary);
+  transform: scaleY(0);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.sidebar-link.active::before { transform: scaleY(1); }
+@media (max-width: 860px) { .sidebar-link::before { display: none; } }
+
+/* ---------- Tabs ---------- */
+.tab-btn { transition: color var(--dur-fast) ease, border-color var(--dur-base) var(--ease-out); }
+.tab-btn:hover:not(.active) { color: var(--text-secondary); }
+
+/* Sliding pill behind the Patient / Doctor / Admin role tabs.
+   The pill is positioned with two CSS variables set from React:
+   --n (number of tabs) and --i (index of the active tab). */
+.auth-role-tabs { position: relative; }
+.auth-role-tab { position: relative; z-index: 1; transition: color var(--dur-base) ease; }
+.auth-role-tab.active { background: transparent; box-shadow: none; }
+.auth-role-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px - 8px * (var(--n, 1) - 1)) / var(--n, 1));
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(calc(var(--i, 0) * (100% + 8px)));
+  transition: transform 340ms var(--ease-out);
+  pointer-events: none;
+}
+
+/* ---------- Forms ---------- */
+.input { transition: border-color var(--dur-fast) ease, box-shadow var(--dur-base) var(--ease-out); }
+.input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(11, 110, 110, 0.16); }
+.input.has-error:focus { border-color: var(--color-danger); box-shadow: 0 0 0 3px rgba(214, 69, 69, 0.16); }
+.input.has-error { animation: shake 400ms var(--ease-in-out); }
+.field-error { animation: drop-in 240ms var(--ease-out) backwards; }
+.auth-error { animation: drop-in 260ms var(--ease-out) backwards; }
+.auth-error:not(.is-success) { animation: drop-in 260ms var(--ease-out) backwards, shake 400ms 260ms var(--ease-in-out); }
+
+/* ---------- Auth pages ---------- */
+.auth-card { animation: rise-in 600ms var(--ease-out) backwards; }
+
+/* ---------- Modal (exit is driven by Modal.jsx adding .is-closing) ---------- */
+.modal-overlay { animation: fade-in 200ms ease-out backwards; }
+.modal-box { animation: modal-in 300ms var(--ease-out) backwards; }
+.modal-close-btn { transition: color var(--dur-fast) ease, transform var(--dur-base) var(--ease-out); }
+.modal-close-btn:hover { color: var(--text-primary); transform: rotate(90deg); }
+.modal-overlay.is-closing { animation: fade-out 180ms ease-in forwards; pointer-events: none; }
+.modal-overlay.is-closing .modal-box { animation: modal-out 180ms ease-in forwards; }
+
+/* ---------- Toasts (exit is driven by Notification.jsx adding .is-leaving) ---------- */
+.toast { position: relative; overflow: hidden; animation: toast-in 420ms var(--ease-spring) backwards; }
+.toast.is-leaving { animation: toast-out 250ms ease-in forwards; }
+.toast::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--color-primary);
+  opacity: 0.35;
+  transform-origin: left center;
+  animation: toast-timer var(--toast-ms, 3250ms) linear forwards;
+}
+.toast.success::after { background: var(--color-success); }
+.toast.error::after   { background: var(--color-danger); }
+.toast.info::after    { background: var(--color-navy); }
+
+/* ---------- Loading & empty states ---------- */
+/* Short delay so quick loads don't flash a spinner */
+.spinner-wrap { animation: fade-in 300ms ease-out 150ms backwards; }
+.empty-state .icon { animation: pop-in 500ms var(--ease-spring) 100ms backwards; }
+
+/* Booking confirmation check: the circle draws, then the tick */
+.anim-check path     { stroke-dasharray: 70; stroke-dashoffset: 70; animation: draw 650ms var(--ease-out) 150ms forwards; }
+.anim-check polyline { stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw 400ms var(--ease-out) 700ms forwards; }
+
+/* ---------- Footer ---------- */
+.footer a { transition: color var(--dur-fast) ease, transform var(--dur-base) var(--ease-out); }
+.footer a:hover { transform: translateX(3px); }
+
+/* ---------- Emergency banner: one gentle pulse on the icon ---------- */
+.pulse-ring { position: relative; display: inline-flex; border-radius: 50%; flex-shrink: 0; }
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--color-danger);
+  opacity: 0;
+  animation: pulse-ring 2.4s var(--ease-out) infinite;
+}
+
+/* ---------- Home hero: the one orchestrated moment ---------- */
+.hero-seq > * { animation: rise-in 750ms var(--ease-out) backwards; }
+.hero-seq > :nth-child(1) { animation-delay: 100ms; }
+.hero-seq > :nth-child(2) { animation-delay: 230ms; }
+.hero-seq > :nth-child(3) { animation-delay: 360ms; }
+.hero-seq > :nth-child(4) { animation-delay: 490ms; }
+
+.hero-art { animation: fade-in 800ms ease-out 250ms backwards; }
+.hero-art-row { animation: slide-in-right 650ms var(--ease-out) backwards; }
+.hero-art-row:nth-child(1) { animation-delay: 400ms; }
+.hero-art-row:nth-child(2) { animation-delay: 520ms; }
+.hero-art-row:nth-child(3) { animation-delay: 640ms; }
+.hero-art-row:nth-child(4) { animation-delay: 760ms; }
+
+/* Heartbeat trace (components/HeartbeatLine.jsx) */
+.hero-ecg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 84px;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-ecg path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.hero-ecg-base {
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 2;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw 2000ms var(--ease-in-out) 300ms forwards;
+}
+.hero-ecg-pulse {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+  stroke-dasharray: 140 2000;
+  stroke-dashoffset: 140;
+  filter: drop-shadow(0 0 6px rgba(255, 111, 77, 0.85));
+  animation: ecg-travel 4.6s linear 2.4s infinite;
+}
+
+/* ===========================================================
+   Generated delay ladders (nth-child can't read a counter in plain CSS).
+   Capped at 12 items so long lists never feel slow.
+=========================================================== */
+
+/* .stagger — mount cascade; tune with --step (default 60ms) */
+.stagger > :nth-child(2) { animation-delay: calc(var(--step, 60ms) * 1); }
+.stagger > :nth-child(3) { animation-delay: calc(var(--step, 60ms) * 2); }
+.stagger > :nth-child(4) { animation-delay: calc(var(--step, 60ms) * 3); }
+.stagger > :nth-child(5) { animation-delay: calc(var(--step, 60ms) * 4); }
+.stagger > :nth-child(6) { animation-delay: calc(var(--step, 60ms) * 5); }
+.stagger > :nth-child(7) { animation-delay: calc(var(--step, 60ms) * 6); }
+.stagger > :nth-child(8) { animation-delay: calc(var(--step, 60ms) * 7); }
+.stagger > :nth-child(9) { animation-delay: calc(var(--step, 60ms) * 8); }
+.stagger > :nth-child(10) { animation-delay: calc(var(--step, 60ms) * 9); }
+.stagger > :nth-child(11) { animation-delay: calc(var(--step, 60ms) * 10); }
+.stagger > :nth-child(n+12) { animation-delay: calc(var(--step, 60ms) * 11); }
+
+/* .reveal-stagger — scroll cascade; tune with --step (default 80ms) */
+.reveal-stagger.is-visible > :nth-child(2) { animation-delay: calc(var(--step, 80ms) * 1); }
+.reveal-stagger.is-visible > :nth-child(3) { animation-delay: calc(var(--step, 80ms) * 2); }
+.reveal-stagger.is-visible > :nth-child(4) { animation-delay: calc(var(--step, 80ms) * 3); }
+.reveal-stagger.is-visible > :nth-child(5) { animation-delay: calc(var(--step, 80ms) * 4); }
+.reveal-stagger.is-visible > :nth-child(6) { animation-delay: calc(var(--step, 80ms) * 5); }
+.reveal-stagger.is-visible > :nth-child(7) { animation-delay: calc(var(--step, 80ms) * 6); }
+.reveal-stagger.is-visible > :nth-child(8) { animation-delay: calc(var(--step, 80ms) * 7); }
+.reveal-stagger.is-visible > :nth-child(9) { animation-delay: calc(var(--step, 80ms) * 8); }
+.reveal-stagger.is-visible > :nth-child(10) { animation-delay: calc(var(--step, 80ms) * 9); }
+.reveal-stagger.is-visible > :nth-child(11) { animation-delay: calc(var(--step, 80ms) * 10); }
+.reveal-stagger.is-visible > :nth-child(n+12) { animation-delay: calc(var(--step, 80ms) * 11); }
+
+/* Table rows */
+.data-table tbody tr { animation: row-in 340ms var(--ease-out) backwards; }
+.data-table tbody tr:nth-child(2) { animation-delay: 35ms; }
+.data-table tbody tr:nth-child(3) { animation-delay: 70ms; }
+.data-table tbody tr:nth-child(4) { animation-delay: 105ms; }
+.data-table tbody tr:nth-child(5) { animation-delay: 140ms; }
+.data-table tbody tr:nth-child(6) { animation-delay: 175ms; }
+.data-table tbody tr:nth-child(7) { animation-delay: 210ms; }
+.data-table tbody tr:nth-child(8) { animation-delay: 245ms; }
+.data-table tbody tr:nth-child(9) { animation-delay: 280ms; }
+.data-table tbody tr:nth-child(10) { animation-delay: 315ms; }
+.data-table tbody tr:nth-child(n+11) { animation-delay: 350ms; }
+
+/* ===========================================================
+   Reduced motion
+   index.css already shortens every animation/transition to ~0ms.
+   These rules finish the job: stop infinite loops from spinning at
+   0ms, drop stagger delays, and make sure nothing stays hidden.
+=========================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0ms !important;
+  }
+  .reveal, .reveal-stagger > * { opacity: 1 !important; transform: none !important; }
+  .hero-ecg-pulse { display: none; }
+  .hero-ecg-base { stroke-dashoffset: 0; }
+  .pulse-ring::after { display: none; }
+  .toast::after { display: none; }
+  .anim-check path, .anim-check polyline { stroke-dashoffset: 0; }
+  /* keep loading spinners turning (slowly) — a frozen one looks broken */
+  .spinner, .btn.is-loading::before { animation-iteration-count: infinite !important; animation-duration: 1.2s !important; }
+}
